@@ -22,7 +22,10 @@
       "@interface/*": ["./src/interface/*"],
       "@assets/*": ["./src/assets/*"],
       "@components/*": ["./src/components/*"],
-      "@slices/*": ["./src/store/slices/*"]
+      "@slices/*": ["./src/store/slices/*"],
+      "@services/*": ["./src/services/*"],
+      "@hooks/*": ["./src/hooks/*"],
+      "@store": ["./src/store/index"]
     },
 
     /* Linting */

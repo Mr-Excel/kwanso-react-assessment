@@ -36,6 +36,12 @@ const userSlice = createSlice({
       state.loading = false;
       state.error = null;
     },
+    appendUsers: (state, action: PayloadAction<UserApiResponse>) => {
+      state.users = [...state.users, ...action.payload.results];
+      state.apiInfo = action.payload.info;
+      state.loading = false;
+      state.error = null;
+    },
     setSelectedUser: (state, action: PayloadAction<User | null>) => {
       state.selectedUser = action.payload;
     },
@@ -80,6 +86,7 @@ export const {
   setLoading,
   setUsers,
   addUsers,
+  appendUsers,
   setSelectedUser,
   updateUser,
   deleteUser,

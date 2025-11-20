@@ -1,4 +1,3 @@
-import type { RootState } from "../store";
 import type {
   User,
   Location,
@@ -7,7 +6,7 @@ import type {
   Id,
   Picture,
 } from "@interface/index";
-
+import type { RootState } from "../store";
 // Basic state selectors
 export const selectUsers = (state: RootState): User[] => state.user.users;
 export const selectApiInfo = (state: RootState) => state.user.apiInfo;
