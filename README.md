@@ -1,4 +1,7 @@
-# React User Listing - Kwanso Assessment
+# Kwanso ReactJS Assessment
+![Project Logo](https://s.rozee.pk/company_logos/66/24538467244851.jpg)
+
+---
 
 A modern React application built with TypeScript, Vite, Redux Toolkit (RTK Query), and Tailwind CSS 4. This application demonstrates a user listing component with pagination, filtering, and search functionality using the Atomic Design pattern.
 
@@ -304,6 +307,20 @@ pnpm build
 ```bash
 pnpm preview
 ```
+
+### Git Hooks & Code Quality
+
+This repository uses **Husky** + **lint-staged** to automatically lint staged files before every commit.
+
+- Hooks are installed automatically after `pnpm install` (via the `prepare` script).
+- The `pre-commit` hook runs `pnpm lint-staged`, which executes ESLint with `--fix` on staged `ts/tsx/js/jsx` files.
+- You can run the same checks manually anytime:
+
+```bash
+pnpm lint-staged
+```
+
+> If Husky hooks stop working (e.g., after cloning with `--no-verify`), run `pnpm prepare` to reinstall them.
 
 ## 📚 Component Documentation
 
