@@ -6,7 +6,10 @@ A modern React application built with TypeScript, Vite, Redux Toolkit (RTK Query
 
 - ✅ **User Listing** with pagination
 - ✅ **Gender Filtering** with persistence (survives navigation)
-- ✅ **Search Functionality** (client-side filtering)
+- ✅ **Search Functionality** (fixed - works with pagination)
+- ✅ **User Profile Pages** with React Router navigation
+- ✅ **Google Maps Integration** on profile pages (bonus)
+- ✅ **Nationality Flags** displayed throughout (bonus)
 - ✅ **Responsive Design** using Tailwind CSS 4
 - ✅ **Atomic Design Pattern** for component architecture
 - ✅ **RTK Query** for data fetching and caching
@@ -419,15 +422,75 @@ This project uses Tailwind CSS 4 with the new `@import` syntax:
 5. **Error Handling**: Graceful error states and retry mechanisms
 6. **Responsive Design**: Mobile-first approach with Tailwind breakpoints
 
+## 🗺️ Google Maps Integration
+
+The profile page includes Google Maps integration to display user locations.
+
+### Setup
+
+1. Get a Google Maps API Key from [Google Cloud Console](https://console.cloud.google.com/)
+2. Enable the "Maps Embed API" for your project
+3. Create a `.env` file in the root directory:
+   ```env
+   VITE_GOOGLE_MAPS_API_KEY=your_api_key_here
+   ```
+4. Restart the development server
+
+### Features
+
+- **Interactive Map**: Shows user location with coordinates
+- **Full Screen Link**: Opens location in Google Maps
+- **Graceful Fallback**: Shows placeholder if API key is not configured
+
+### Note
+
+The Maps Embed API is free for most use cases. If you don't have an API key, the profile page will still work but show a placeholder instead of the map.
+
+## 🌍 Nationality Flags
+
+Nationality flags are displayed using emoji characters for all supported countries:
+
+- **Profile Page**: Large flag next to user name
+- **User Cards**: Small flag with nationality badge
+- **Supported Countries**: All countries available in the Random User API
+
+## 🔍 Search Functionality Fix
+
+The search functionality has been improved to work correctly with pagination:
+
+### How It Works
+
+1. **Without Search**: Normal pagination fetches 12 users per page from the API
+2. **With Search**: Fetches up to 5000 users and filters client-side
+3. **Pagination**: Disabled while searching (shows all filtered results)
+4. **Performance**: Uses `useMemo` for efficient filtering
+
+### Search Features
+
+- **Debouncing**: 300ms delay to reduce filtering operations
+- **Multi-field**: Searches name, email, and username
+- **Case-insensitive**: Automatic lowercase conversion
+- **Real-time**: Updates as you type
+
+## 🧭 React Router Integration
+
+The application uses React Router v7 for navigation:
+
+- **Routes**:
+  - `/` - User listing page
+  - `/user/:uuid` - User profile page
+- **Navigation**: Click on any user card to view their profile
+- **Back Navigation**: "Back to Listing" button on profile page
+
 ## 🔮 Future Enhancements
 
 - [ ] URL-based filter persistence (shareable links)
 - [ ] Advanced filters (nationality, age range)
-- [ ] User detail modal/page
 - [ ] Sorting options
 - [ ] Virtual scrolling for large datasets
 - [ ] Server-side search implementation
 - [ ] Dark mode support
+- [ ] Export user data to CSV/JSON
 
 ## 📄 License
 
@@ -435,4 +498,4 @@ This project is part of a technical assessment.
 
 ---
 
-Built with ❤️ using React, TypeScript, and Tailwind CSS
+Built with ❤️ using React, TypeScript, Tailwind CSS, and Redux Toolkit

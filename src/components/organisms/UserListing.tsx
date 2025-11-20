@@ -28,19 +28,28 @@ export const UserListing = () => {
   const [currentPage, setCurrentPage] = useFilterPersistence<number>("page", 1);
   const [searchTerm, setSearchTerm] = useState("");
 
+  // Fetch more results when searching to enable proper search functionality
+  const resultsToFetch = searchTerm.trim() ? 5000 : RESULTS_PER_PAGE;
+
   // API call with filters
   const { data, isLoading, error, refetch } = useGetUsersQuery({
-    results: RESULTS_PER_PAGE,
-    page: currentPage,
+    results: resultsToFetch,
+    page: searchTerm.trim() ? 1 : currentPage, // Always page 1 when searching
     gender: genderFilter ? (genderFilter as "male" | "female") : undefined,
   });
 
-  // Client-side search filtering
+  // Client-side search filtering - works on all fetched results
   const filteredUsers = useMemo(() => {
-    if (!data?.results || !searchTerm.trim()) {
-      return data?.results || [];
+    if (!data?.results) {
+      return [];
     }
 
+    // If no search term, return API-paginated results as-is
+    if (!searchTerm.trim()) {
+      return data.results;
+    }
+
+    // When searching, filter all fetched results
     const term = searchTerm.toLowerCase();
     return data.results.filter(
       (user) =>
@@ -131,10 +140,10 @@ export const UserListing = () => {
         {!isLoading && filteredUsers.length > 0 && (
           <>
             <div className="mb-4 text-sm text-gray-600">
-              Showing {filteredUsers.length} of{" "}
-              {searchTerm ? filteredUsers.length : data?.info?.results || 0}{" "}
-              user
-              {filteredUsers.length !== 1 ? "s" : ""}
+              Showing {filteredUsers.length}
+              {searchTerm
+                ? ` of ${filteredUsers.length} search results`
+                : ` of ${data?.info?.results || 0} total users`}{" "}
               {genderFilter && ` (Filtered: ${genderFilter})`}
             </div>
 
@@ -148,7 +157,7 @@ export const UserListing = () => {
               ))}
             </div>
 
-            {/* Pagination - Only show if not searching */}
+            {/* Pagination - Show if not searching, or if searching with multiple pages */}
             {!searchTerm && data?.info && (
               <Pagination
                 currentPage={currentPage}
@@ -157,6 +166,11 @@ export const UserListing = () => {
                 )}
                 onPageChange={handlePageChange}
               />
+            )}
+            {searchTerm && filteredUsers.length === 0 && (
+              <p className="text-center text-gray-500 text-sm mt-4">
+                No users found matching your search criteria.
+              </p>
             )}
           </>
         )}

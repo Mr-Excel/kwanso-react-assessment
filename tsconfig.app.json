@@ -25,7 +25,8 @@
       "@slices/*": ["./src/store/slices/*"],
       "@services/*": ["./src/services/*"],
       "@hooks/*": ["./src/hooks/*"],
-      "@store": ["./src/store/index"]
+      "@store": ["./src/store/index"],
+      "@pages/*": ["./src/components/pages/*"]
     },
 
     /* Linting */
