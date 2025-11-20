@@ -1,84 +1,20 @@
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { useGetUserByIdQuery } from "@services/randomUserApi";
+import { useAppSelector, selectUserById } from "@store";
 import { Avatar, Badge, Card, Button } from "@components/atoms";
-import type { User } from "@interface/index";
-
-// Country code to flag emoji mapping
-const COUNTRY_FLAGS: Record<string, string> = {
-  US: "🇺🇸",
-  GB: "🇬🇧",
-  CA: "🇨🇦",
-  AU: "🇦🇺",
-  DE: "🇩🇪",
-  FR: "🇫🇷",
-  IT: "🇮🇹",
-  ES: "🇪🇸",
-  NL: "🇳🇱",
-  BE: "🇧🇪",
-  CH: "🇨🇭",
-  AT: "🇦🇹",
-  DK: "🇩🇰",
-  FI: "🇫🇮",
-  NO: "🇳🇴",
-  SE: "🇸🇪",
-  IE: "🇮🇪",
-  PT: "🇵🇹",
-  PL: "🇵🇱",
-  BR: "🇧🇷",
-  MX: "🇲🇽",
-  IN: "🇮🇳",
-  JP: "🇯🇵",
-  CN: "🇨🇳",
-  KR: "🇰🇷",
-  TR: "🇹🇷",
-  RU: "🇷🇺",
-  ZA: "🇿🇦",
-  NZ: "🇳🇿",
-  AR: "🇦🇷",
-  CL: "🇨🇱",
-  CO: "🇨🇴",
-  PE: "🇵🇪",
-  VN: "🇻🇳",
-  TH: "🇹🇭",
-  ID: "🇮🇩",
-  MY: "🇲🇾",
-  PH: "🇵🇭",
-  SG: "🇸🇬",
-  HK: "🇭🇰",
-  TW: "🇹🇼",
-  IR: "🇮🇷",
-  SA: "🇸🇦",
-  AE: "🇦🇪",
-  IL: "🇮🇱",
-  EG: "🇪🇬",
-  NG: "🇳🇬",
-  KE: "🇰🇪",
-  RS: "🇷🇸",
-  UA: "🇺🇦",
-};
-
-const getCountryFlag = (countryCode: string): string => {
-  return COUNTRY_FLAGS[countryCode] || "🏳️";
-};
+import { getCountryFlag } from "@constants/userProfile";
 
 export const UserProfile = () => {
   const { uuid } = useParams<{ uuid: string }>();
   const navigate = useNavigate();
 
-  const { data, isLoading, error } = useGetUserByIdQuery(
-    { uuid: uuid || "" },
-    { skip: !uuid }
+  // Get user from Redux store (users are stored when fetched from listing page)
+  // Note: We don't fetch from API using UUID because UUID as seed doesn't work correctly
+  // The Random User API doesn't support direct UUID lookup - seeds return different users
+  const user = useAppSelector((state) =>
+    uuid ? selectUserById(uuid)(state) : undefined
   );
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
-
-  if (error || !data?.results?.[0]) {
+  if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <Card padding="lg" className="text-center max-w-md">
@@ -86,7 +22,8 @@ export const UserProfile = () => {
             User Not Found
           </h2>
           <p className="text-gray-600 mb-6">
-            The user you're looking for doesn't exist or could not be loaded.
+            This user profile is not available. Please navigate to the profile
+            from the user listing page.
           </p>
           <Button onClick={() => navigate("/")} variant="primary">
             Back to Listing
@@ -96,7 +33,6 @@ export const UserProfile = () => {
     );
   }
 
-  const user: User = data.results[0];
   const fullName = `${user.name.title} ${user.name.first} ${user.name.last}`;
   const fullAddress = `${user.location.street.number} ${user.location.street.name}, ${user.location.city}, ${user.location.state} ${user.location.postcode}, ${user.location.country}`;
   const mapUrl = `https://www.google.com/maps?q=${user.location.coordinates.latitude},${user.location.coordinates.longitude}`;
@@ -208,7 +144,7 @@ export const UserProfile = () => {
                   variant={user.gender === "male" ? "primary" : "danger"}
                   className="mt-1"
                 >
-                  {user.gender}
+                  {user.gender.charAt(0).toUpperCase() + user.gender.slice(1)}
                 </Badge>
               </div>
               <div>

@@ -1,31 +1,34 @@
+import { memo, useMemo, useCallback } from "react";
 import { Button } from "@components/atoms";
 
 interface PaginationProps {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
+  hasNextPage?: boolean;
   className?: string;
 }
 
-export const Pagination = ({
+export const Pagination = memo(({
   currentPage,
   totalPages,
   onPageChange,
+  hasNextPage = true,
   className = "",
 }: PaginationProps) => {
-  const handlePrevious = () => {
+  const handlePrevious = useCallback(() => {
     if (currentPage > 1) {
       onPageChange(currentPage - 1);
     }
-  };
+  }, [currentPage, onPageChange]);
 
-  const handleNext = () => {
-    if (currentPage < totalPages) {
+  const handleNext = useCallback(() => {
+    if (hasNextPage && currentPage < totalPages) {
       onPageChange(currentPage + 1);
     }
-  };
+  }, [hasNextPage, currentPage, totalPages, onPageChange]);
 
-  const getPageNumbers = () => {
+  const pageNumbers = useMemo(() => {
     const pages: (number | string)[] = [];
     const maxVisible = 7;
 
@@ -58,7 +61,14 @@ export const Pagination = ({
     }
 
     return pages;
-  };
+  }, [currentPage, totalPages]);
+
+  const handlePageClick = useCallback(
+    (pageNumber: number) => {
+      onPageChange(pageNumber);
+    },
+    [onPageChange]
+  );
 
   if (totalPages <= 1) {
     return null;
@@ -77,7 +87,7 @@ export const Pagination = ({
       </Button>
 
       <div className="flex items-center gap-1">
-        {getPageNumbers().map((page, index) => {
+        {pageNumbers.map((page, index) => {
           if (page === "...") {
             return (
               <span
@@ -95,7 +105,7 @@ export const Pagination = ({
           return (
             <button
               key={pageNumber}
-              onClick={() => onPageChange(pageNumber)}
+              onClick={() => handlePageClick(pageNumber)}
               className={`
                 min-w-[2.5rem] px-3 py-1 rounded-lg font-medium transition-colors
                 ${
@@ -117,12 +127,23 @@ export const Pagination = ({
         variant="outline"
         size="sm"
         onClick={handleNext}
-        disabled={currentPage === totalPages}
+        disabled={currentPage >= totalPages || !hasNextPage}
         aria-label="Next page"
       >
         Next
       </Button>
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison: only re-render if pagination props actually changed
+  return (
+    prevProps.currentPage === nextProps.currentPage &&
+    prevProps.totalPages === nextProps.totalPages &&
+    prevProps.hasNextPage === nextProps.hasNextPage &&
+    prevProps.className === nextProps.className &&
+    prevProps.onPageChange === nextProps.onPageChange
+  );
+});
+
+Pagination.displayName = "Pagination";
 

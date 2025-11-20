@@ -19,7 +19,9 @@
     /* Path Aliases */
     "baseUrl": ".",
     "paths": {
-      "@interface/*": ["./src/interface/*"],
+      "@interfaces/*": ["./src/interfaces/*"],
+      "@typings/*": ["./src/types/*"],
+      "@constants/*": ["./src/constants/*"],
       "@assets/*": ["./src/assets/*"],
       "@components/*": ["./src/components/*"],
       "@slices/*": ["./src/store/slices/*"],

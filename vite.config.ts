@@ -7,7 +7,9 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      "@interface": path.resolve(__dirname, "./src/interface"),
+      "@constants": path.resolve(__dirname, "./src/constants"),
+      "@interfaces": path.resolve(__dirname, "./src/interfaces"),
+      "@typings": path.resolve(__dirname, "./src/types"),
       "@assets": path.resolve(__dirname, "./src/assets"),
       "@components": path.resolve(__dirname, "./src/components"),
       "@slices": path.resolve(__dirname, "./src/store/slices"),

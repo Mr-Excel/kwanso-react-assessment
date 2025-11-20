@@ -1,3 +1,4 @@
+import { memo, useMemo, useCallback } from "react";
 import { Select } from "@components/atoms";
 
 interface FilterDropdownProps {
@@ -9,7 +10,7 @@ interface FilterDropdownProps {
   className?: string;
 }
 
-export const FilterDropdown = ({
+export const FilterDropdown = memo(({
   label,
   value,
   options,
@@ -17,16 +18,33 @@ export const FilterDropdown = ({
   placeholder = "All",
   className = "",
 }: FilterDropdownProps) => {
-  const allOption = { value: "", label: placeholder };
+  const allOption = useMemo(
+    () => ({ value: "", label: placeholder }),
+    [placeholder]
+  );
+
+  const allOptions = useMemo(
+    () => [allOption, ...options],
+    [allOption, options]
+  );
+
+  const handleChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      onChange(e.target.value);
+    },
+    [onChange]
+  );
 
   return (
     <Select
       label={label}
       value={value}
-      onChange={(e) => onChange(e.target.value)}
-      options={[allOption, ...options]}
+      onChange={handleChange}
+      options={allOptions}
       className={className}
     />
   );
-};
+});
+
+FilterDropdown.displayName = "FilterDropdown";
 

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback, memo } from "react";
 import { useGetUsersQuery } from "@services/randomUserApi";
 import {
   SearchBar,
@@ -7,15 +7,15 @@ import {
   UserCard,
 } from "@components/molecules";
 import { useFilterPersistence } from "@hooks/index";
-import { useAppDispatch, setSelectedUser } from "@store";
-import type { User } from "@interface/index";
+import { useAppDispatch, setUsers, setSelectedUser } from "@store";
+import type { User } from "@interfaces/index";
+import { GENDER_OPTIONS, RESULTS_PER_PAGE } from "@constants/listing";
 
-const GENDER_OPTIONS = [
-  { value: "male", label: "Male" },
-  { value: "female", label: "Female" },
-];
+// Memoize GENDER_OPTIONS to prevent re-creation
+const MEMOIZED_GENDER_OPTIONS = GENDER_OPTIONS;
 
-const RESULTS_PER_PAGE = 12;
+// Memoize Pagination to prevent re-renders during search
+const MemoizedPagination = memo(Pagination);
 
 export const UserListing = () => {
   const dispatch = useAppDispatch();
@@ -38,20 +38,28 @@ export const UserListing = () => {
     gender: genderFilter ? (genderFilter as "male" | "female") : undefined,
   });
 
+  // Store fetched users in Redux for profile page access
+  useEffect(() => {
+    if (data?.results) {
+      dispatch(setUsers(data));
+    }
+  }, [data, dispatch]);
+
   // Client-side search filtering - works on all fetched results
-  const filteredUsers = useMemo(() => {
-    if (!data?.results) {
+  const allFilteredUsers = useMemo(() => {
+    const results = data?.results;
+    if (!results) {
       return [];
     }
 
     // If no search term, return API-paginated results as-is
     if (!searchTerm.trim()) {
-      return data.results;
+      return results;
     }
 
     // When searching, filter all fetched results
     const term = searchTerm.toLowerCase();
-    return data.results.filter(
+    return results.filter(
       (user) =>
         user.name.first.toLowerCase().includes(term) ||
         user.name.last.toLowerCase().includes(term) ||
@@ -59,27 +67,80 @@ export const UserListing = () => {
         user.login.username.toLowerCase().includes(term) ||
         `${user.name.first} ${user.name.last}`.toLowerCase().includes(term)
     );
-  }, [data, searchTerm]);
+  }, [data?.results, searchTerm]);
 
-  // Reset to page 1 when filters change
-  const handleGenderChange = (value: string) => {
-    setGenderFilter(value);
-    setCurrentPage(1);
-  };
+  // Client-side pagination for search results, or use API results directly
+  const paginatedUsers = useMemo(() => {
+    if (!searchTerm.trim()) {
+      // No search: use API-paginated results directly
+      return allFilteredUsers;
+    }
+    
+    // Search: apply client-side pagination to filtered results
+    const startIndex = (currentPage - 1) * RESULTS_PER_PAGE;
+    const endIndex = startIndex + RESULTS_PER_PAGE;
+    return allFilteredUsers.slice(startIndex, endIndex);
+  }, [allFilteredUsers, currentPage, searchTerm]);
 
-  const handleSearch = (value: string) => {
-    setSearchTerm(value);
-    setCurrentPage(1);
-  };
+  // Memoize pagination info - works for both search and normal pagination
+  const paginationInfo = useMemo(() => {
+    if (searchTerm.trim()) {
+      // Client-side pagination for search results
+      const totalFiltered = allFilteredUsers.length;
+      const totalPages = Math.ceil(totalFiltered / RESULTS_PER_PAGE) || 1;
+      const hasNextPage = currentPage < totalPages;
+      
+      return { hasNextPage, totalPages };
+    }
+    
+    // Server-side pagination (API handles pagination)
+    const hasNextPage = paginatedUsers.length === RESULTS_PER_PAGE;
+    const totalPages = Math.max(currentPage + 10, 100); // Allow up to 100 pages
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+    return { hasNextPage, totalPages };
+  }, [searchTerm, allFilteredUsers.length, currentPage, paginatedUsers.length]);
 
-  const handleUserClick = (user: User) => {
-    dispatch(setSelectedUser(user));
-  };
+  // Reset to page 1 when filters change - memoized to prevent re-renders
+  const handleGenderChange = useCallback(
+    (value: string) => {
+      setGenderFilter(value);
+      setCurrentPage(1);
+    },
+    [setGenderFilter, setCurrentPage]
+  );
+
+  const handleSearch = useCallback(
+    (value: string) => {
+      setSearchTerm(value);
+      setCurrentPage(1);
+    },
+    [setCurrentPage]
+  );
+
+  const handlePageChange = useCallback(
+    (page: number) => {
+      setCurrentPage(page);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    },
+    [setCurrentPage]
+  );
+
+  const handleUserClick = useCallback(
+    (user: User) => {
+      dispatch(setSelectedUser(user));
+      // User is already stored in Redux via the useEffect above
+    },
+    [dispatch]
+  );
+
+  const handleRetry = useCallback(() => {
+    refetch();
+  }, [refetch]);
+
+  const handleClearFilters = useCallback(() => {
+    setSearchTerm("");
+    setGenderFilter("");
+  }, [setGenderFilter]);
 
   if (error) {
     return (
@@ -90,7 +151,7 @@ export const UserListing = () => {
               Error loading users. Please try again.
             </p>
             <button
-              onClick={() => refetch()}
+              onClick={handleRetry}
               className="mt-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
             >
               Retry
@@ -116,13 +177,19 @@ export const UserListing = () => {
         {/* Filters and Search */}
         <div className="mb-6 space-y-4 md:space-y-0 md:flex md:gap-4">
           <div className="flex-1">
+            <label
+              htmlFor="search-input"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Search Users
+            </label>
             <SearchBar onSearch={handleSearch} />
           </div>
           <div className="w-full md:w-48">
             <FilterDropdown
               label="Filter by Gender"
               value={genderFilter}
-              options={GENDER_OPTIONS}
+              options={MEMOIZED_GENDER_OPTIONS}
               onChange={handleGenderChange}
               placeholder="All Genders"
             />
@@ -137,18 +204,25 @@ export const UserListing = () => {
         )}
 
         {/* Results */}
-        {!isLoading && filteredUsers.length > 0 && (
+        {!isLoading && paginatedUsers.length > 0 && (
           <>
             <div className="mb-4 text-sm text-gray-600">
-              Showing {filteredUsers.length}
-              {searchTerm
-                ? ` of ${filteredUsers.length} search results`
-                : ` of ${data?.info?.results || 0} total users`}{" "}
-              {genderFilter && ` (Filtered: ${genderFilter})`}
+              {searchTerm ? (
+                <>
+                  Showing {paginatedUsers.length} of {allFilteredUsers.length} search result
+                  {allFilteredUsers.length !== 1 ? "s" : ""} (Page {currentPage} of {paginationInfo.totalPages})
+                </>
+              ) : (
+                <>
+                  Showing page {currentPage} ({paginatedUsers.length} user
+                  {paginatedUsers.length !== 1 ? "s" : ""} per page)
+                </>
+              )}{" "}
+              {genderFilter && ` • Filtered: ${genderFilter}`}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-              {filteredUsers.map((user) => (
+              {paginatedUsers.map((user) => (
                 <UserCard
                   key={user.login.uuid}
                   user={user}
@@ -157,26 +231,20 @@ export const UserListing = () => {
               ))}
             </div>
 
-            {/* Pagination - Show if not searching, or if searching with multiple pages */}
-            {!searchTerm && data?.info && (
-              <Pagination
+            {/* Pagination - Always show when there are results */}
+            {paginationInfo.totalPages > 1 && (
+              <MemoizedPagination
                 currentPage={currentPage}
-                totalPages={Math.ceil(
-                  (data.info.results || 0) / RESULTS_PER_PAGE
-                )}
+                totalPages={paginationInfo.totalPages}
+                hasNextPage={paginationInfo.hasNextPage}
                 onPageChange={handlePageChange}
               />
-            )}
-            {searchTerm && filteredUsers.length === 0 && (
-              <p className="text-center text-gray-500 text-sm mt-4">
-                No users found matching your search criteria.
-              </p>
             )}
           </>
         )}
 
         {/* Empty State */}
-        {!isLoading && filteredUsers.length === 0 && (
+        {!isLoading && paginatedUsers.length === 0 && allFilteredUsers.length === 0 && (
           <div className="text-center py-12">
             <div className="text-gray-400 mb-4">
               <svg
@@ -203,10 +271,7 @@ export const UserListing = () => {
             </p>
             {(searchTerm || genderFilter) && (
               <button
-                onClick={() => {
-                  setSearchTerm("");
-                  setGenderFilter("");
-                }}
+                onClick={handleClearFilters}
                 className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
               >
                 Clear Filters

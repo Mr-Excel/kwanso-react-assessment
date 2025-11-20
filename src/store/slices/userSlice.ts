@@ -1,8 +1,9 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { User, UserApiResponse, ApiInfo } from "@interface/index";
+import type { User, UserApiResponse, ApiInfo } from "@interfaces/index";
 
 interface UserState {
   users: User[];
+  usersById: Record<string, User>; // Index users by UUID for quick lookup
   apiInfo: ApiInfo | null;
   loading: boolean;
   error: string | null;
@@ -11,6 +12,7 @@ interface UserState {
 
 const initialState: UserState = {
   users: [],
+  usersById: {},
   apiInfo: null,
   loading: false,
   error: null,
@@ -26,21 +28,45 @@ const userSlice = createSlice({
     },
     setUsers: (state, action: PayloadAction<UserApiResponse>) => {
       state.users = action.payload.results;
+      // Index users by UUID for quick lookup
+      action.payload.results.forEach((user) => {
+        state.usersById[user.login.uuid] = user;
+      });
       state.apiInfo = action.payload.info;
       state.loading = false;
       state.error = null;
     },
     addUsers: (state, action: PayloadAction<UserApiResponse>) => {
       state.users = [...state.users, ...action.payload.results];
+      // Index users by UUID for quick lookup
+      action.payload.results.forEach((user) => {
+        state.usersById[user.login.uuid] = user;
+      });
       state.apiInfo = action.payload.info;
       state.loading = false;
       state.error = null;
     },
     appendUsers: (state, action: PayloadAction<UserApiResponse>) => {
       state.users = [...state.users, ...action.payload.results];
+      // Index users by UUID for quick lookup
+      action.payload.results.forEach((user) => {
+        state.usersById[user.login.uuid] = user;
+      });
       state.apiInfo = action.payload.info;
       state.loading = false;
       state.error = null;
+    },
+    setUser: (state, action: PayloadAction<User>) => {
+      // Add or update a single user in both arrays and index
+      const existingIndex = state.users.findIndex(
+        (u) => u.login.uuid === action.payload.login.uuid
+      );
+      if (existingIndex !== -1) {
+        state.users[existingIndex] = action.payload;
+      } else {
+        state.users.push(action.payload);
+      }
+      state.usersById[action.payload.login.uuid] = action.payload;
     },
     setSelectedUser: (state, action: PayloadAction<User | null>) => {
       state.selectedUser = action.payload;
@@ -72,6 +98,7 @@ const userSlice = createSlice({
     },
     clearUsers: (state) => {
       state.users = [];
+      state.usersById = {};
       state.apiInfo = null;
       state.selectedUser = null;
     },
@@ -87,6 +114,7 @@ export const {
   setUsers,
   addUsers,
   appendUsers,
+  setUser,
   setSelectedUser,
   updateUser,
   deleteUser,

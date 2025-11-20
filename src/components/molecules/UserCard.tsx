@@ -1,23 +1,8 @@
+import { memo, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Card, Avatar, Badge } from "@components/atoms";
-import type { User } from "@interface/index";
-
-// Country code to flag emoji mapping
-const COUNTRY_FLAGS: Record<string, string> = {
-  US: "🇺🇸", GB: "🇬🇧", CA: "🇨🇦", AU: "🇦🇺", DE: "🇩🇪", FR: "🇫🇷",
-  IT: "🇮🇹", ES: "🇪🇸", NL: "🇳🇱", BE: "🇧🇪", CH: "🇨🇭", AT: "🇦🇹",
-  DK: "🇩🇰", FI: "🇫🇮", NO: "🇳🇴", SE: "🇸🇪", IE: "🇮🇪", PT: "🇵🇹",
-  PL: "🇵🇱", BR: "🇧🇷", MX: "🇲🇽", IN: "🇮🇳", JP: "🇯🇵", CN: "🇨🇳",
-  KR: "🇰🇷", TR: "🇹🇷", RU: "🇷🇺", ZA: "🇿🇦", NZ: "🇳🇿", AR: "🇦🇷",
-  CL: "🇨🇱", CO: "🇨🇴", PE: "🇵🇪", VN: "🇻🇳", TH: "🇹🇭", ID: "🇮🇩",
-  MY: "🇲🇾", PH: "🇵🇭", SG: "🇸🇬", HK: "🇭🇰", TW: "🇹🇼", IR: "🇮🇷",
-  SA: "🇸🇦", AE: "🇦🇪", IL: "🇮🇱", EG: "🇪🇬", NG: "🇳🇬", KE: "🇰🇪",
-  RS: "🇷🇸", UA: "🇺🇦",
-};
-
-const getCountryFlag = (countryCode: string): string => {
-  return COUNTRY_FLAGS[countryCode] || "🏳️";
-};
+import type { User } from "@interfaces/index";
+import { getCountryFlag } from "@constants/userProfile";
 
 interface UserCardProps {
   user: User;
@@ -25,15 +10,22 @@ interface UserCardProps {
   className?: string;
 }
 
-export const UserCard = ({ user, onClick, className = "" }: UserCardProps) => {
-  const handleClick = () => {
+export const UserCard = memo(({ user, onClick, className = "" }: UserCardProps) => {
+  const handleClick = useCallback(() => {
     if (onClick) {
       onClick(user);
     }
-  };
+  }, [onClick, user]);
 
-  const fullName = `${user.name.title} ${user.name.first} ${user.name.last}`;
-  const location = `${user.location.city}, ${user.location.state}, ${user.location.country}`;
+  const fullName = useMemo(
+    () => `${user.name.title} ${user.name.first} ${user.name.last}`,
+    [user.name.title, user.name.first, user.name.last]
+  );
+
+  const location = useMemo(
+    () => `${user.location.city}, ${user.location.state}, ${user.location.country}`,
+    [user.location.city, user.location.state, user.location.country]
+  );
 
   return (
     <Link to={`/user/${user.login.uuid}`} className="block">
@@ -91,4 +83,17 @@ export const UserCard = ({ user, onClick, className = "" }: UserCardProps) => {
       </Card>
     </Link>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison: only re-render if user data actually changed
+  // Compare by UUID and key user properties to avoid unnecessary re-renders
+  return (
+    prevProps.user.login.uuid === nextProps.user.login.uuid &&
+    prevProps.user.email === nextProps.user.email &&
+    prevProps.user.name.first === nextProps.user.name.first &&
+    prevProps.user.name.last === nextProps.user.name.last &&
+    prevProps.className === nextProps.className &&
+    prevProps.onClick === nextProps.onClick
+  );
+});
+
+UserCard.displayName = "UserCard";

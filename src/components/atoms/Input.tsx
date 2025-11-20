@@ -1,3 +1,4 @@
+import { memo, useMemo, useId } from "react";
 import type { InputHTMLAttributes, ReactNode } from "react";
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -8,7 +9,7 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   rightIcon?: ReactNode;
 }
 
-export const Input = ({
+export const Input = memo(({
   label,
   error,
   helperText,
@@ -18,7 +19,8 @@ export const Input = ({
   id,
   ...props
 }: InputProps) => {
-  const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
+  const generatedId = useId();
+  const inputId = useMemo(() => id || `input-${generatedId}`, [id, generatedId]);
 
   return (
     <div className="w-full">
@@ -65,5 +67,7 @@ export const Input = ({
       )}
     </div>
   );
-};
+});
+
+Input.displayName = "Input";
 

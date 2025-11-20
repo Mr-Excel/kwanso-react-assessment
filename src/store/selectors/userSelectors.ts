@@ -5,7 +5,7 @@ import type {
   DateInfo,
   Id,
   Picture,
-} from "@interface/index";
+} from "@interfaces/index";
 import type { RootState } from "../store";
 // Basic state selectors
 export const selectUsers = (state: RootState): User[] => state.user.users;
@@ -62,6 +62,9 @@ export const selectUsersBySearchTerm =
 export const selectUserById =
   (uuid: string) =>
   (state: RootState): User | undefined =>
+    // First try the indexed lookup for O(1) performance
+    state.user.usersById?.[uuid] ||
+    // Fallback to array search (for backwards compatibility)
     state.user.users.find((user) => user.login.uuid === uuid);
 
 export const selectUserByEmail =

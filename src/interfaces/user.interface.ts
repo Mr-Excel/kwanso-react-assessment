@@ -81,3 +81,4 @@ export interface ApiInfo {
   page: number;
   version: string;
 }
+
